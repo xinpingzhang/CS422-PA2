@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 /* a "msg" is the data unit passed from layer 5 (teachers code) to layer  */
 /* 4 (students' code).  It contains the data (characters) to be delivered */
@@ -33,6 +34,10 @@ extern int TRACE;
 static int a_base;
 static int a_ack;
 static struct pkt a_last_pkt;
+
+static int b_base;
+static int b_ack;
+static struct pkt b_last_pkt;
 
 /********* STUDENTS WRITE THE NEXT SEVEN ROUTINES *********/
 #define MAGIC_COOKIE 0x59696E67
@@ -70,6 +75,8 @@ void A_output(struct msg message)
     a_last_pkt.seqnum = a_base++;
     a_ack = !a_ack;
     a_last_pkt.acknum = a_ack;
+    
+    assert(a_ack == b_ack);
 
     memcpy(a_last_pkt.payload, message.data, sizeof(message));
 
@@ -90,7 +97,7 @@ void A_input(struct pkt packet)
     {
         if(TRACE >= 2)
         {
-            printf("A: Packet Corrupted! Resend last packet.\n");
+            printf("A: Packet Corrupted! Resend packet %d.\n", a_last_pkt.acknum);
         }
         tolayer3(A, a_last_pkt);
         return;
@@ -99,7 +106,7 @@ void A_input(struct pkt packet)
     {
         if(TRACE >= 2)
         {
-            printf("A: NAK received, resend last packet.\n");
+            printf("A: NAK received, resend packet. %d\n", a_last_pkt.acknum);
         }
         tolayer3(A, a_last_pkt);
         return;
@@ -132,10 +139,6 @@ void A_init()
     a_last_pkt.acknum = -1;
 }
 
-static int b_base;
-static int b_ack;
-static struct pkt b_last_pkt;
-
 /* called from layer 3, when a packet arrives for layer 4 at B*/
 void B_input(struct pkt packet)
 {
@@ -143,7 +146,7 @@ void B_input(struct pkt packet)
     {
         if(TRACE >= 2)
         {
-            printf("B: Packet Corrupted! Send NAK\n");
+            printf("B: Packet Corrupted! Send NAK(ReACK last one)\n");
             write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
         }
         //ack the last packet
