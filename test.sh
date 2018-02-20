@@ -21,3 +21,6 @@ test "10 0 0.3 1000 3" "flip.log"
 
 echo "TEST LOSS"
 test "10 0.1 0 1000 3" "loss.log"
+
+echo "TEST ARQ"
+test "10 0.1 0.3 1000 3" "arq.log"
