@@ -42,27 +42,27 @@ struct pkt
 /********* STUDENTS WRITE THE NEXT SEVEN ROUTINES *********/
 
 /* called from layer 5, passed the data to be sent to other side */
-void A_output(struct msg message);
+extern void A_output(struct msg message);
 
 /* called from layer 3, when a packet arrives for layer 4 */
-void A_input(struct pkt packet);
+extern void A_input(struct pkt packet);
 
 /* called when A's timer goes off */
-void A_timerinterrupt();
+extern void A_timerinterrupt();
 
 /* the following routine will be called once (only) before any other */
 /* entity A routines are called. You can use it to do any initialization */
-void A_init();
+extern void A_init();
 
 /* called from layer 3, when a packet arrives for layer 4 at B*/
-void B_input(struct pkt packet);
+extern void B_input(struct pkt packet);
 
 /* called when B's timer goes off */
-void B_timerinterrupt();
+extern void B_timerinterrupt();
 
 /* the following rouytine will be called once (only) before any other */
 /* entity B routines are called. You can use it to do any initialization */
-void B_init();
+extern void B_init();
 
 /*****************************************************************
 ***************** NETWORK EMULATION CODE STARTS BELOW ***********
@@ -279,7 +279,7 @@ void generate_next_arrival()
     insertevent(evptr);
 }
 
-void insertevent(p) struct event *p;
+void insertevent(struct event *p)
 {
     struct event *q, *qold;
 
@@ -337,7 +337,7 @@ void printevlist()
 /********************** Student-callable ROUTINES ***********************/
 
 /* called by students routine to cancel a previously-started timer */
-void stoptimer(AorB) int AorB; /* A or B is trying to stop timer */
+void stoptimer(int AorB) /* A or B is trying to stop timer */
 {
     struct event *q, *qold;
 
@@ -368,8 +368,7 @@ void stoptimer(AorB) int AorB; /* A or B is trying to stop timer */
     printf("Warning: unable to cancel your timer. It wasn't running.\n");
 }
 
-void starttimer(AorB, increment) int AorB; /* A or B is trying to stop timer */
-float increment;
+void starttimer(int AorB, float increment) /* A or B is trying to stop timer */
 {
 
     struct event *q;
@@ -395,8 +394,7 @@ float increment;
 }
 
 /************************** TOLAYER3 ***************/
-void tolayer3(AorB, packet) int AorB; /* A or B is trying to stop timer */
-struct pkt packet;
+void tolayer3(int AorB, struct pkt packet)/* A or B is trying to stop timer */
 {
     struct pkt *mypktptr;
     struct event *evptr, *q;
@@ -466,8 +464,7 @@ struct pkt packet;
     insertevent(evptr);
 }
 
-void tolayer5(AorB, datasent) int AorB;
-char datasent[20];
+void tolayer5(int AorB, char datasent[20])
 {
     int i;
     if (TRACE > 2)

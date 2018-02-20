@@ -41,6 +41,7 @@ static struct pkt b_last_pkt;
 
 /********* STUDENTS WRITE THE NEXT SEVEN ROUTINES *********/
 #define MAGIC_COOKIE 0x59696E67
+#define TIMEOUT_PERIOD 16
 
 int checksum(struct pkt *pkt)
 {
@@ -86,7 +87,7 @@ void A_output(struct msg message)
         printf("A: Sending packet %d\n", a_ack);
     }
     //give 7 unit of time for grace period.
-    // starttimer(A, 7);
+    starttimer(A, TIMEOUT_PERIOD);
     tolayer3(A, a_last_pkt);
 }
 
@@ -102,6 +103,14 @@ void A_input(struct pkt packet)
         tolayer3(A, a_last_pkt);
         return;
     }
+    if(a_last_pkt.acknum == -1)
+    {
+        if(TRACE >= 2)
+        {
+            printf("A: Duplicate ACK for %d received, ignore\n", packet.acknum);
+        }
+        return;
+    }
     if(packet.acknum != a_ack)
     {
         if(TRACE >= 2)
@@ -115,19 +124,27 @@ void A_input(struct pkt packet)
     {
         printf("A: %d ACKed!\n", packet.acknum);
     }
-    // stoptimer(A);
+    stoptimer(A);
     a_last_pkt.acknum = -1;
-    tolayer5(A, packet.payload);
 }
 
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
+    if(a_last_pkt.acknum == -1)
+    {
+        if(TRACE >= 2)
+        {
+            printf("A: Packet %d ACKed already, ignoring timeout\n", a_ack);
+        }
+        return;
+    }
     if(TRACE >= 2)
     {
         printf("A: timeout, resend last packet.\n");
     }
     tolayer3(A, a_last_pkt);
+    starttimer(A, TIMEOUT_PERIOD);
 }
 
 /* the following routine will be called once (only) before any other */
@@ -147,7 +164,7 @@ void B_input(struct pkt packet)
         if(TRACE >= 2)
         {
             printf("B: Packet Corrupted! Send NAK(ReACK last one)\n");
-            write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
+            // write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
         }
         //ack the last packet
         tolayer3(B, b_last_pkt);
@@ -158,7 +175,7 @@ void B_input(struct pkt packet)
         if(TRACE >= 2)
         {
             printf("B: Duplicate packet!\n Re ACK last one!");
-            write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
+            // write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
         }
         tolayer3(B, b_last_pkt);
         return;
