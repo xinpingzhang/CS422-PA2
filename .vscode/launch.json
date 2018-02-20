@@ -27,7 +27,7 @@
             "name": "(lldb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/prog2_arq",
+            "program": "${workspaceFolder}/bin/prog2_arq",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
