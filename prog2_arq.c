@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdarg.h>
 
 /* a "msg" is the data unit passed from layer 5 (teachers code) to layer  */
 /* 4 (students' code).  It contains the data (characters) to be delivered */
@@ -45,13 +46,15 @@ static struct pkt b_last_pkt;
 
 int tracef(int level, const char *format, ...)
 {
+    int ret = 0;
     if(TRACE >= level)
     {
         va_list args;
         va_start(args, format);
-        vprintf(format, args);
+        ret = vprintf(format, args);
         va_end (args);
     }
+    return ret;
 }
 
 int checksum(struct pkt *pkt)
