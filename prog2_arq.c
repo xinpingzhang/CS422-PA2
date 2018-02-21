@@ -94,6 +94,14 @@ void A_output(struct msg message)
 /* called from layer 3, when a packet arrives for layer 4 */
 void A_input(struct pkt packet)
 {
+    if(a_last_pkt.acknum == -1)
+    {
+        if(TRACE >= 2)
+        {
+            printf("A: No packet in flight, ignore.\n");
+        }
+        return;
+    }
     if(is_corrupt(&packet))
     {
         if(TRACE >= 2)
