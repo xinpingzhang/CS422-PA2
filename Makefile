@@ -20,5 +20,4 @@ $(BINDIR)/prog2_arq: $(BUILDDIR)/prog2_arq.o $(BUILDDIR)/prog2.o
 	$(CC) -g $(OPT) $(BUILDDIR)/prog2_arq.o $(BUILDDIR)/prog2.o -o $(BINDIR)/prog2_arq
 
 clean:
-	rm -f *.o prog2_arq prog2_gbn
-	rm -rf $(BINDIR) $(BUILDIR)
+	rm -rf $(BINDIR) $(BUILDDIR)
