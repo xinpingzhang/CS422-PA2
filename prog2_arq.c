@@ -43,6 +43,17 @@ static struct pkt b_last_pkt;
 #define MAGIC_COOKIE 0x59696E67
 #define TIMEOUT_PERIOD 16
 
+int tracef(int level, const char *format, ...)
+{
+    if(TRACE >= level)
+    {
+        va_list args;
+        va_start(args, format);
+        vprintf(format, args);
+        va_end (args);
+    }
+}
+
 int checksum(struct pkt *pkt)
 {
     int cookie = MAGIC_COOKIE;
@@ -67,11 +78,8 @@ void A_output(struct msg message)
 {
     if(a_last_pkt.acknum != -1)
     {
-        if(TRACE >= 2)
-        {
-            printf("A: Packet %d in flight! Dropping this one!\n", a_last_pkt.acknum);
-            return;
-        }
+        tracef(2, "A: Packet %d in flight! Dropping this one!\n", a_last_pkt.acknum);
+        return;
     }
     a_last_pkt.seqnum = a_base++;
     a_ack = !a_ack;
@@ -82,10 +90,7 @@ void A_output(struct msg message)
     memcpy(a_last_pkt.payload, message.data, sizeof(message));
 
     a_last_pkt.checksum = checksum(&a_last_pkt);
-    if(TRACE >= 2)
-    {
-        printf("A: Sending packet %d\n", a_ack);
-    }
+    tracef(2, "A: Sending packet %d\n", a_ack);
     //give 7 unit of time for grace period.
     starttimer(A, TIMEOUT_PERIOD);
     tolayer3(A, a_last_pkt);
@@ -96,42 +101,27 @@ void A_input(struct pkt packet)
 {
     if(a_last_pkt.acknum == -1)
     {
-        if(TRACE >= 2)
-        {
-            printf("A: No packet in flight, ignore.\n");
-        }
+        tracef(2, "A: No packet in flight, ignore.\n");
         return;
     }
     if(is_corrupt(&packet))
     {
-        if(TRACE >= 2)
-        {
-            printf("A: Packet Corrupted! Resend packet %d.\n", a_last_pkt.acknum);
-        }
+        tracef(2, "A: Packet Corrupted! Resend packet %d.\n", a_last_pkt.acknum);
         tolayer3(A, a_last_pkt);
         return;
     }
     if(a_last_pkt.acknum == -1)
     {
-        if(TRACE >= 2)
-        {
-            printf("A: Duplicate ACK for %d received, ignore\n", packet.acknum);
-        }
+        tracef(2, "A: Duplicate ACK for %d received, ignore\n", packet.acknum);
         return;
     }
     if(packet.acknum != a_ack)
     {
-        if(TRACE >= 2)
-        {
-            printf("A: NAK received, resend packet. %d\n", a_last_pkt.acknum);
-        }
+        tracef(2, "A: NAK received, resend packet. %d\n", a_last_pkt.acknum);
         tolayer3(A, a_last_pkt);
         return;
     }
-    if(TRACE >= 2)
-    {
-        printf("A: %d ACKed!\n", packet.acknum);
-    }
+    tracef(2, "A: %d ACKed!\n", packet.acknum);
     stoptimer(A);
     a_last_pkt.acknum = -1;
 }
@@ -141,16 +131,10 @@ void A_timerinterrupt()
 {
     if(a_last_pkt.acknum == -1)
     {
-        if(TRACE >= 2)
-        {
-            printf("A: Packet %d ACKed already, ignoring timeout\n", a_ack);
-        }
+        tracef(2, "A: Packet %d ACKed already, ignoring timeout\n", a_ack);
         return;
     }
-    if(TRACE >= 2)
-    {
-        printf("A: timeout, resend last packet.\n");
-    }
+    tracef(2, "A: timeout, resend last packet.\n");
     tolayer3(A, a_last_pkt);
     starttimer(A, TIMEOUT_PERIOD);
 }
@@ -169,29 +153,20 @@ void B_input(struct pkt packet)
 {
     if(is_corrupt(&packet))
     {
-        if(TRACE >= 2)
-        {
-            printf("B: Packet Corrupted! Send NAK(ReACK last one)\n");
-            // write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
-        }
+        tracef(2, "B: Packet Corrupted! Send NAK(ReACK last one)\n");
+        // write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
         //ack the last packet
         tolayer3(B, b_last_pkt);
         return;
     }
     if(packet.acknum != b_ack)
     {
-        if(TRACE >= 2)
-        {
-            printf("B: Duplicate packet!\n Re ACK last one!");
-            // write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
-        }
+        tracef(2, "B: Duplicate packet!\n Re ACK last one!");
+        // write(STDOUT_FILENO, packet.payload, sizeof(packet.payload));
         tolayer3(B, b_last_pkt);
         return;
     }
-    if(TRACE >= 2)
-    {
-        printf("B: Packet OK! ACKing %d\n", b_ack);
-    }
+    tracef(2, "B: Packet OK! ACKing %d\n", b_ack);
     //send ack
     b_last_pkt.seqnum = b_base++;
     b_last_pkt.acknum = b_ack;
