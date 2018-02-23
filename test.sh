@@ -17,10 +17,10 @@ test()
 }
 
 echo "TEST FLIP"
-test "10 0 0.3 1000 3" "flip.log"
+test "30 0 0.3 1000 3" "flip.log"
 
 echo "TEST LOSS"
-test "10 0.1 0 1000 3" "loss.log"
+test "30 0.1 0 1000 3" "loss.log"
 
 echo "TEST ARQ"
-test "10 0.1 0.3 1000 3" "arq.log"
+test "30 0.1 0.3 1000 3" "arq.log"
