@@ -43,15 +43,13 @@ static int is_corrupt(struct pkt *pkt)
     return checksum(pkt) != pkt->checksum;
 }
 
-#define BUF_SIZE 50
+#define BUF_SIZE 64
 // #define WND_SIZE 20
 static int base;
 static int unacked;
 static int next_slot;
 static struct pkt a_buf[BUF_SIZE];
 
-//a's current sequence number
-static int a_base;
 
 /* called from layer 5, passed the data to be sent to other side */
 void A_output(struct msg message)
@@ -64,25 +62,28 @@ void A_output(struct msg message)
     struct pkt *pkt = &a_buf[next_slot];
     
     //A's ack num is unused...
-    a_base++;
-    pkt->acknum = ~a_base;
-    pkt->seqnum = a_base;
+    pkt->acknum = ~next_slot;
+    pkt->seqnum = next_slot;
 
     memcpy(pkt->payload, message.data, sizeof(pkt->payload));
     pkt->checksum = checksum(pkt);
     next_slot++;
 
-    while(next_slot >= BUF_SIZE)next_slot -= BUF_SIZE;
+    next_slot %= BUF_SIZE;
 
     if(unacked < BUF_SIZE)
     {
         tolayer3(A, *pkt);
-        starttimer(A, TIMEOUT_PERIOD);
+        if(unacked == 0)
+        {
+            tracef(2, "A: Starting Timer\n");
+            starttimer(A, TIMEOUT_PERIOD);
+        }
         unacked++;
-        tracef(2, "A: Sending packet %d\n", a_base);
+        tracef(2, "A: Sending packet %d\n", pkt->seqnum);
     }else
     {
-        tracef(2, "A: Buffering packet %d\n", a_base);
+        tracef(2, "A: Buffering packet %d\n", pkt->seqnum);
     }
 }
 
@@ -92,6 +93,11 @@ void A_input(struct pkt packet)
     if(is_corrupt(&packet))
     {
         tracef(2, "A: ACK %d Corrupted! Ignore ACK!\n", packet.acknum);
+        return;
+    }
+    if(base == packet.acknum+1)
+    {
+        tracef(2, "A: Duplicate ACK %d!\n", packet.acknum);
         return;
     }
     base = packet.acknum+1;
@@ -115,11 +121,11 @@ void A_input(struct pkt packet)
 /* called when A's timer goes off */
 void A_timerinterrupt()
 {
-    tracef(2, "A: Resending: base %d, count: %d\n", base, unacked);
-    for(int i = base; i != next_slot; i ++)
+    tracef(2, "A: Resending: base %d, count: %d next_slot %d\n", base, unacked, next_slot);
+    for(int i = base; i != next_slot; i = (i+1) % BUF_SIZE)
     {
-        if(i >= BUF_SIZE)i-= BUF_SIZE;
         tolayer3(A, a_buf[i]);
+        tracef(2, "i = %d, next_slot = %d\n", i, next_slot);
     }
     starttimer(A, TIMEOUT_PERIOD);
 }
@@ -131,9 +137,6 @@ void A_init()
     base = 0;
     unacked = 0;
     next_slot = 0;
-
-    //a's current sequence number
-    a_base = -1;
 }
 
 
@@ -163,6 +166,7 @@ void B_input(struct pkt packet)
     b_last_pkt.checksum = checksum(&b_last_pkt);
     tolayer3(B, b_last_pkt);
     expected_seq++;
+    expected_seq %= BUF_SIZE;
 }
 
 /* called when B's timer goes off */
