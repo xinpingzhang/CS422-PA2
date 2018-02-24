@@ -17,13 +17,13 @@ test_gbn()
 }
 
 echo "TEST DUM"
-test_gbn "100 0 0 1000 3" "dum.log"
+test_gbn "100 0 0 100 3" "dum.log"
 
 echo "TEST FLIP"
-test_gbn "20 0 0.2 1000 3" "flip.log"
+test_gbn "100 0 0.2 100 3" "flip.log"
 
 echo "TEST LOSS"
-test_gbn "20 0.2 0 1000 3" "loss.log"
+test_gbn "100 0.2 0 100 3" "loss.log"
 
 echo "TEST ARQ"
-test_gbn "20 0.2 0.2 1000 3" "gbn.log"
+test_gbn "100 0.2 0.2 100 3" "gbn.log"
