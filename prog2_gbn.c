@@ -98,6 +98,7 @@ void A_input(struct pkt packet)
     if(base == packet.acknum+1)
     {
         tracef(2, "A: Duplicate ACK %d!\n", packet.acknum);
+        A_timerinterrupt();
         return;
     }
     base = packet.acknum+1;
