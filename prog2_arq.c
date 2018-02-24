@@ -3,6 +3,7 @@
 static int a_base;
 static int a_ack;
 static struct pkt a_last_pkt;
+static float start_time = 0;
 
 static int b_base;
 static int b_ack;
@@ -12,7 +13,7 @@ static struct pkt b_last_pkt;
 #define MAGIC_COOKIE 0x59696E67
 #define TIMEOUT_PERIOD 16
 
-int tracef(int level, const char *format, ...)
+static int tracef(int level, const char *format, ...)
 {
     int ret = 0;
     if(TRACE >= level)
@@ -25,7 +26,7 @@ int tracef(int level, const char *format, ...)
     return ret;
 }
 
-int checksum(struct pkt *pkt)
+static int checksum(struct pkt *pkt)
 {
     int cookie = MAGIC_COOKIE;
     int *data = (int*)&pkt->payload[0];
@@ -52,6 +53,7 @@ void A_output(struct msg message)
         tracef(2, "A: Packet %d in flight! Dropping this one!\n", a_last_pkt.acknum);
         return;
     }
+    start_time = time;
     a_last_pkt.seqnum = a_base++;
     a_ack = !a_ack;
     a_last_pkt.acknum = a_ack;
@@ -81,11 +83,6 @@ void A_input(struct pkt packet)
         tolayer3(A, a_last_pkt);
         return;
     }
-    if(a_last_pkt.acknum == -1)
-    {
-        tracef(2, "A: Duplicate ACK for %d received, ignore\n", packet.acknum);
-        return;
-    }
     if(packet.acknum != a_ack)
     {
         tracef(2, "A: NAK received, resend packet. %d\n", a_last_pkt.acknum);
@@ -94,6 +91,7 @@ void A_input(struct pkt packet)
     }
     tracef(2, "A: %d ACKed!\n", packet.acknum);
     stoptimer(A);
+    tracef(2, "A: transmission time: %f\n", time - start_time);
     a_last_pkt.acknum = -1;
 }
 

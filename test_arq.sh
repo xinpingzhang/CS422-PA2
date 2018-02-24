@@ -1,7 +1,7 @@
 #!/bin/bash
 output=output.log
 
-test()
+test_arq()
 {
 	echo $1 | ./bin/prog2_arq > $2
 	cat $2 | grep -a "MAINLOOP: data given to student" | sed "$ d" | awk '{print $6}' > given.txt
@@ -17,10 +17,10 @@ test()
 }
 
 echo "TEST FLIP"
-test "30 0 0.3 1000 3" "flip.log"
+test_arq "20 0 0.3 2000 3" "flip.log"
 
 echo "TEST LOSS"
-test "30 0.1 0 1000 3" "loss.log"
+test_arq "20 0.1 0 2000 3" "loss.log"
 
 echo "TEST ARQ"
-test "30 0.1 0.3 1000 3" "arq.log"
+test_arq "20 0.1 0.3 2000 3" "arq.log"

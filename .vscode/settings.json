@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "prog2.h": "c"
+        "prog2.h": "c",
+        "stdarg.h": "c",
+        "unistd.h": "c"
     }
 }
