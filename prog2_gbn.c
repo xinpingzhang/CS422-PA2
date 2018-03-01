@@ -87,6 +87,8 @@ void A_output(struct msg message)
     }
 }
 
+static int dupACK = 0;
+
 /* called from layer 3, when a packet arrives for layer 4 */
 void A_input(struct pkt packet)
 {
@@ -98,9 +100,16 @@ void A_input(struct pkt packet)
     if(base == packet.acknum+1)
     {
         tracef(2, "A: Duplicate ACK %d!\n", packet.acknum);
-        A_timerinterrupt();
+        dupACK++;
+        if(dupACK >= 3)
+        {
+            dupACK = 0;
+            stoptimer(A);
+            A_timerinterrupt();
+        }
         return;
     }
+    dupACK = 0;
     base = packet.acknum+1;
     base %= BUF_SIZE;
     if(next_slot < base)
