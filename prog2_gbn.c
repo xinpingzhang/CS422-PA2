@@ -44,9 +44,10 @@ static int is_corrupt(struct pkt *pkt)
 }
 
 #define BUF_SIZE 64
-// #define WND_SIZE 20
+#define WND_SIZE 8
 static int base;
 static int unacked;
+static int buffered;
 static int next_slot;
 static struct pkt a_buf[BUF_SIZE];
 
@@ -54,11 +55,6 @@ static struct pkt a_buf[BUF_SIZE];
 /* called from layer 5, passed the data to be sent to other side */
 void A_output(struct msg message)
 {
-    if(unacked >= BUF_SIZE)
-    {
-        tracef(2, "A: Buffer full! Dropping this one\n");
-        return;
-    }
     struct pkt *pkt = &a_buf[next_slot];
     
     //A's ack num is unused...
@@ -71,7 +67,7 @@ void A_output(struct msg message)
 
     next_slot %= BUF_SIZE;
 
-    if(unacked < BUF_SIZE)
+    if(unacked < WND_SIZE)
     {
         tolayer3(A, *pkt);
         if(unacked == 0)
@@ -83,6 +79,7 @@ void A_output(struct msg message)
         tracef(2, "A: Sending packet %d\n", pkt->seqnum);
     }else
     {
+        buffered ++;
         tracef(2, "A: Buffering packet %d\n", pkt->seqnum);
     }
 }
@@ -101,7 +98,7 @@ void A_input(struct pkt packet)
     {
         tracef(2, "A: Duplicate ACK %d!\n", packet.acknum);
         dupACK++;
-        if(dupACK >= 3)
+        if(dupACK >= 16)
         {
             dupACK = 0;
             stoptimer(A);
@@ -110,8 +107,6 @@ void A_input(struct pkt packet)
         return;
     }
     dupACK = 0;
-    base = packet.acknum+1;
-    base %= BUF_SIZE;
     if(next_slot < base)
     {
         unacked = next_slot + BUF_SIZE - base;
@@ -119,6 +114,16 @@ void A_input(struct pkt packet)
     {
         unacked = next_slot - base;
     }
+    for(; unacked < WND_SIZE && buffered > 0; unacked ++, buffered--)
+    {
+        struct pkt *pkt_ptr = &a_buf[(base+unacked) % BUF_SIZE];
+        tracef(2, "A: new ACK! send new packet %d\n", pkt_ptr->seqnum);
+        tolayer3(A, *pkt_ptr);
+        unacked++;
+    }
+    base = packet.acknum+1;
+    base %= BUF_SIZE;
+    
     tracef(2, "A: ACK OK! Base: %d unACKed: %d\n", base, unacked);
     stoptimer(A);
     if(unacked > 0)
@@ -147,6 +152,7 @@ void A_init()
     base = 0;
     unacked = 0;
     next_slot = 0;
+    buffered = 0;
 }
 
 
